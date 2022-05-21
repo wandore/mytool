@@ -44,7 +44,7 @@ func (l *Locker) Keep(ctx context.Context, ttl time.Duration) error {
 
 	keepLua := redis.NewScript(`if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("pexpire", KEYS[1], ARGV[2]) else return 0 end`)
 
-	ok, err := keepLua.Run(ctx, l.redis, []string{l.key}, l.uuid+l.value, release).Result()
+	ok, err := keepLua.Run(ctx, *l.redis, []string{l.key}, l.uuid+l.value, release).Result()
 	if err != nil {
 		return err
 	}
