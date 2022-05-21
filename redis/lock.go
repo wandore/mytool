@@ -26,7 +26,7 @@ func (r *MyRedis) TryLock(key, value string, ttl time.Duration) (*Locker, error)
 	}
 
 	locker := &Locker{
-		redis: *r.redis,
+		redis: r.redis,
 		key:   key,
 		value: value,
 		uuid:  uuid,
@@ -35,7 +35,7 @@ func (r *MyRedis) TryLock(key, value string, ttl time.Duration) (*Locker, error)
 }
 
 type Locker struct {
-	redis redis.Client
+	redis *redis.Client
 	key   string
 	value string
 	uuid  string
