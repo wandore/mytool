@@ -57,9 +57,17 @@ func (h *Hash) Remove(node string) {
 		virtualNodeHash := h.getHash(virtualNode)
 
 		index := sort.Search(len(h.virtualHashes), func(i int) bool {
-			return h.virtualHashes[i] == virtualNodeHash
+			return h.virtualHashes[i] >= virtualNodeHash
 		})
-		h.virtualHashes = append(h.virtualHashes[:index], h.virtualHashes[index+1:]...)
+		if index < len(h.virtualHashes) {
+			if index == 0 {
+				if h.virtualHashes[0] == virtualNodeHash {
+					h.virtualHashes = h.virtualHashes[index+1:]
+				}
+			} else {
+				h.virtualHashes = append(h.virtualHashes[:index], h.virtualHashes[index+1:]...)
+			}
+		}
 
 		delete(h.circle, virtualNodeHash)
 	}
