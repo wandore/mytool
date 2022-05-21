@@ -8,62 +8,59 @@ learn from stathat.com/c/consistent
 package main
 
 import (
-    "context"
     "fmt"
-    "github.com/wandore/mytool/redis"
-    "time"
+    uuid "github.com/satori/go.uuid"
+    "github.com/wandore/mytool/hash"
 )
 
-var addr = "your redis addr"
-var pwd = "your redis password"
-var db = 0
-
-func grantLease(ctx context.Context, locker *redis.Locker) {
-    t := time.NewTicker(time.Second * 3)
-    defer t.Stop()
-
-    for {
-        select {
-        case <-ctx.Done():
-            fmt.Println("stop granting lease")
-            return
-        case <-t.C:
-            locker.Keep(time.Second * 5)
-            fmt.Println("grant lease")
-        }
-    }
-}
+var replicas = 1024
+var clusterNum = 10
+var nodes = make([]string, 0)
+var nums = make([]int, 0)
 
 func main() {
-    myredis, err := redis.New(addr, pwd, db)
-    if err != nil {
-        panic(err)
+    hash := hash.New(replicas, nil)
+
+    for i := 0; i < clusterNum; i++ {
+    	node := uuid.NewV4().String()
+    	hash.Add(node)
+    	nodes = append(nodes, node)
+    	nums = append(nums, 0)
     }
 
-    key := "lock"
-    value := "test"
-    ttl := time.Second * 5
-    var locker *redis.Locker
-    for {
-        locker, err = myredis.TryLock(key, value, ttl)
-        if err != nil {
-            fmt.Println(err, "sleep 3s")
-            time.Sleep(time.Second * 3)
-        } else {
-            fmt.Println(locker)
-            break
+    for i := 0; i < 1000; i++ {
+    	key := uuid.NewV4().String()
+    	node, _ := hash.Match(key)
+    	for j, member := range nodes {
+    	    if node == member {
+                nums[j]++
+                break
+            }
         }
     }
 
-    ctx, cancelFunc := context.WithCancel(context.Background())
+    fmt.Println(nums)
 
-    go grantLease(ctx, locker)
+    removeNode := nodes[clusterNum-1]
+    nodes = nodes[:clusterNum]
+    fmt.Println("will remove", removeNode)
+    hash.Remove(removeNode)
+    nums = nums[:clusterNum-1]
+    for i := range nums {
+    	nums[i] = 0
+    }
 
-    fmt.Println("get lock, dispatching job")
+    for i := 0; i < 1000; i++ {
+    	key := uuid.NewV4().String()
+    	node, _ := hash.Match(key)
+    	for j, member := range nodes {
+    		if node == member {
+    			nums[j]++
+    			break
+    		}
+    	}
+    }
 
-    time.Sleep(time.Second * 30)
-
-    cancelFunc()
-    locker.Unlock()
+    fmt.Println(nums)
 }
 ```
