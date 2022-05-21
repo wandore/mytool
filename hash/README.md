@@ -1,9 +1,9 @@
 example
 
-redis lock:
+consistent hash:
 ```
 /*
-learn from github.com/bsm/redislock
+learn from stathat.com/c/consistent
 */
 package main
 
