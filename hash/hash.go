@@ -98,6 +98,35 @@ func (h *Hash) Match(key string) (string, error) {
 	return h.circle[virtualHash], nil
 }
 
+func (h *Hash) Size() int {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	return len(h.clusterNodes)
+}
+
+func (h *Hash) GetCluster() []string {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	clusterNodes := make([]string, 0)
+
+	for node := range h.clusterNodes {
+		clusterNodes = append(clusterNodes, node)
+	}
+
+	return clusterNodes
+}
+
+func (h *Hash) Exist(node string) bool {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	_, ok := h.clusterNodes[node]
+
+	return ok
+}
+
 func (h *Hash) sortVirtualNodes() {
 	sort.Slice(h.virtualHashes, func(i, j int) bool {
 		return h.virtualHashes[i] < h.virtualHashes[j]
